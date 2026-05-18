@@ -65,16 +65,37 @@ def generate():
             text = f'[рядок {line_num} не знайдено на стор. {page_key}]'
         else:
             idx = line_num - 1
-            # Collect a window of lines (take more to find sentence boundaries)
-            window = page_lines[idx:idx + lines_take + 5]
-            raw = ' '.join(window)
 
-            # Find last sentence-ending punctuation within reasonable length
-            # Try to end on . ! ? — but not too short and not too long
+            # If the target line starts with a lowercase letter or a continuation
+            # (word break from previous line), step back to find the real start
+            start_idx = idx
+            if start_idx > 0:
+                target = page_lines[start_idx]
+                # starts with lowercase or dash continuation from prev line
+                if target and (target[0].islower() or target[0] in ',:;'):
+                    start_idx = max(0, start_idx - 1)
+
+            # Collect a window of lines starting from adjusted position
+            window_lines = page_lines[start_idx:start_idx + lines_take + 8]
+
+            # Join lines, fixing hyphenated word-breaks (e.g. "сказа-" + "ла" → "сказала")
+            joined_parts = []
+            for i, line in enumerate(window_lines):
+                if joined_parts and joined_parts[-1].endswith('-'):
+                    # merge: remove trailing hyphen and join without space
+                    joined_parts[-1] = joined_parts[-1][:-1] + line
+                else:
+                    joined_parts.append(line)
+            raw = ' '.join(joined_parts)
+
+            # Find sentence start — find first capital letter or «-» dialog start
+            sentence_start = re.search(r'([-«""\u2014]?\s*[А-ЯІЇЄA-Z])', raw)
+            if sentence_start:
+                raw = raw[sentence_start.start():]
+
+            # Find sentence end — cut at first . ! ? after min_chars
             min_chars = 40
             max_chars = 400
-
-            # Find all sentence endings
             endings = [m.end() for m in re.finditer(r'[.!?»][)\s»"\']*', raw)]
 
             text = raw  # fallback
@@ -84,7 +105,6 @@ def generate():
                     text = candidate
                     break
 
-            # If no good ending found within max_chars, cut at max and add ellipsis
             if len(text) > max_chars:
                 text = text[:max_chars].rsplit(' ', 1)[0] + '...'
 
