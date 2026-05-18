@@ -9,17 +9,14 @@ import csv, io, os, json, re
 
 app = Flask(__name__, static_folder='.')
 
-# ── Головна сторінка ──────────────────────────────────────────────────────────
 @app.route('/')
 def index():
     return send_from_directory('.', 'index.html')
 
-# ── Завантаження PDF ──────────────────────────────────────────────────────────
 @app.route('/parse-pdf', methods=['POST'])
 def parse_pdf():
     if 'pdf' not in request.files:
         return jsonify({'error': 'Файл не надіслано'}), 400
-
     f = request.files['pdf']
     pages = {}
     try:
@@ -33,14 +30,12 @@ def parse_pdf():
                         pages[str(i)] = lines
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
     return jsonify({
         'total_pages': total,
         'total_lines': sum(len(v) for v in pages.values()),
         'pages': pages
     })
 
-# ── Генерація CSV ─────────────────────────────────────────────────────────────
 @app.route('/generate', methods=['POST'])
 def generate():
     data = request.json
@@ -66,39 +61,46 @@ def generate():
         else:
             idx = line_num - 1
 
-            # If the target line starts with a lowercase letter or a continuation
-            # (word break from previous line), step back to find the real start
+            # Step back if line starts with lowercase (continuation of prev line)
             start_idx = idx
             if start_idx > 0:
                 target = page_lines[start_idx]
-                # starts with lowercase or dash continuation from prev line
                 if target and (target[0].islower() or target[0] in ',:;'):
                     start_idx = max(0, start_idx - 1)
 
-            # Collect a window of lines starting from adjusted position
+            # Collect window of lines
             window_lines = page_lines[start_idx:start_idx + lines_take + 8]
 
-            # Join lines, fixing hyphenated word-breaks (e.g. "сказа-" + "ла" → "сказала")
+            # Fix hyphenated word-breaks (e.g. "сказа-" + "ла" -> "сказала")
             joined_parts = []
-            for i, line in enumerate(window_lines):
+            for line in window_lines:
                 if joined_parts and joined_parts[-1].endswith('-'):
-                    # merge: remove trailing hyphen and join without space
                     joined_parts[-1] = joined_parts[-1][:-1] + line
                 else:
                     joined_parts.append(line)
             raw = ' '.join(joined_parts)
 
-            # Find sentence start — find first capital letter or «-» dialog start
-            sentence_start = re.search(r'([-«""\u2014]?\s*[А-ЯІЇЄA-Z])', raw)
-            if sentence_start:
-                raw = raw[sentence_start.start():]
+            # Find sentence start: capital letter takes strong priority over dialog dash
+            cap_match = re.search(r'[А-ЯІЇЄA-Z]', raw)
+            dash_match = re.search(r'[\u2014\-]\s*(?=[а-яіїєА-ЯІЇЄ])', raw)
 
-            # Find sentence end — cut at first . ! ? after min_chars
+            if cap_match and dash_match:
+                # use capital if it's close or before the dash
+                if cap_match.start() <= dash_match.start() + 3:
+                    raw = raw[cap_match.start():]
+                else:
+                    raw = raw[dash_match.start():]
+            elif cap_match:
+                raw = raw[cap_match.start():]
+            elif dash_match:
+                raw = raw[dash_match.start():]
+
+            # Find sentence end: stop at . ! ? after min 40 chars
             min_chars = 40
             max_chars = 400
             endings = [m.end() for m in re.finditer(r'[.!?»][)\s»"\']*', raw)]
 
-            text = raw  # fallback
+            text = raw
             for end in endings:
                 candidate = raw[:end].strip()
                 if len(candidate) >= min_chars:
