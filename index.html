@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Book Oracle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:#1a1208;--paper:#f5f0e8;--paper-dark:#ede6d6;
+    --accent:#8b1a1a;--accent-light:#c94040;--gold:#b8860b;
+    --muted:#7a6e5f;--border:#c9bfa8;
+    --success-bg:#e8f4e8;--success:#2d6a2d;
+    --error-bg:#f4e8e8;--error:#6a2d2d;
+    --warn-bg:#fef9e7;--warn:#7a5a2d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font-family:'DM Mono',monospace;font-weight:300;min-height:100vh;background-image:repeating-linear-gradient(0deg,transparent,transparent 27px,rgba(139,26,26,0.04) 28px)}
+  header{border-bottom:1px solid var(--border);padding:1.6rem 3rem;display:flex;align-items:baseline;gap:1.5rem;background:var(--paper);position:sticky;top:0;z-index:100}
+  header h1{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:400;letter-spacing:.02em}
+  header h1 em{color:var(--accent);font-style:italic}
+  .header-sub{font-size:.7rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+  .layout{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 69px)}
+  .sidebar{border-right:1px solid var(--border);padding:2rem 1.5rem;background:var(--paper-dark);position:sticky;top:69px;height:calc(100vh - 69px);overflow-y:auto}
+  .nav-label{font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.75rem;padding-left:.5rem}
+  .nav-item{display:flex;align-items:center;gap:.75rem;padding:.6rem .75rem;border-radius:4px;cursor:pointer;font-size:.8rem;letter-spacing:.04em;color:var(--muted);margin-bottom:2px;transition:all .15s;border:1px solid transparent;user-select:none}
+  .nav-item:hover{background:var(--paper);color:var(--ink)}
+  .nav-item.active{background:var(--paper);color:var(--ink);border-color:var(--border)}
+  .nav-item .step-num{width:20px;height:20px;border-radius:50%;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.65rem;flex-shrink:0;color:var(--muted)}
+  .nav-item.active .step-num,.nav-item.done .step-num{background:var(--accent);border-color:var(--accent);color:#fff}
+  .sidebar-divider{border:none;border-top:1px solid var(--border);margin:1.5rem 0}
+  .sidebar-stat{font-size:.72rem;color:var(--muted);margin-bottom:.5rem;padding:0 .5rem}
+  .sidebar-stat strong{color:var(--ink);font-weight:400}
+  .main{padding:2.5rem 3rem}
+  .panel{display:none}.panel.active{display:block}
+  .panel-title{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:400;margin-bottom:.4rem}
+  .panel-desc{font-size:.75rem;color:var(--muted);letter-spacing:.03em;margin-bottom:2rem;line-height:1.7}
+  .card{background:var(--paper);border:1px solid var(--border);border-radius:6px;padding:1.5rem;margin-bottom:1.25rem}
+  .card-title{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem}
+  label{font-size:.75rem;color:var(--muted);display:block;margin-bottom:.35rem;letter-spacing:.03em}
+  input[type=text],input[type=number],select,textarea{width:100%;background:var(--paper-dark);border:1px solid var(--border);border-radius:4px;padding:.6rem .75rem;font-family:'DM Mono',monospace;font-size:.8rem;font-weight:300;color:var(--ink);outline:none;transition:border-color .15s}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+  textarea{resize:vertical;line-height:1.6}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+  .field{margin-bottom:1rem}
+  .drop-zone{border:1.5px dashed var(--border);border-radius:6px;padding:2rem;text-align:center;cursor:pointer;font-size:.78rem;color:var(--muted);letter-spacing:.04em;transition:all .15s;margin-bottom:1rem}
+  .drop-zone:hover,.drop-zone.drag{border-color:var(--accent);background:var(--paper-dark);color:var(--ink)}
+  .drop-icon{font-size:1.5rem;display:block;margin-bottom:.5rem}
+  .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.55rem 1.25rem;border:1px solid var(--border);border-radius:4px;background:transparent;font-family:'DM Mono',monospace;font-size:.75rem;font-weight:300;letter-spacing:.05em;color:var(--ink);cursor:pointer;transition:all .15s}
+  .btn:hover{background:var(--paper-dark);border-color:var(--muted)}
+  .btn:active{transform:scale(.98)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn-primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn-primary:hover{background:var(--accent-light);border-color:var(--accent-light)}
+  .btn-gold{background:var(--gold);border-color:var(--gold);color:#fff}
+  .btn-gold:hover{opacity:.85}
+  .btn-group{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1rem}
+  .msg{padding:.6rem 1rem;border-radius:4px;font-size:.75rem;margin-top:.75rem;letter-spacing:.02em;display:none;white-space:pre-line;line-height:1.6}
+  .msg.show{display:block}
+  .msg.ok{background:var(--success-bg);color:var(--success)}
+  .msg.err{background:var(--error-bg);color:var(--error)}
+  .msg.warn{background:var(--warn-bg);color:var(--warn)}
+  table{width:100%;border-collapse:collapse;font-size:.72rem;table-layout:fixed}
+  th{text-align:left;padding:.5rem .75rem;color:var(--muted);border-bottom:1px solid var(--border);font-weight:300;letter-spacing:.06em;text-transform:uppercase;font-size:.62rem;background:var(--paper)}
+  td{padding:.5rem .75rem;border-bottom:1px solid var(--border);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:var(--paper-dark)}
+  tbody tr.warn-row td{background:#fef9e7}
+  .badge{display:inline-block;font-size:.62rem;padding:1px 7px;border-radius:10px;letter-spacing:.04em}
+  .badge-ok{background:var(--success-bg);color:var(--success)}
+  .badge-warn{background:var(--warn-bg);color:var(--warn)}
+  .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem}
+  .stat-box{background:var(--paper-dark);border:1px solid var(--border);border-radius:6px;padding:1rem 1.25rem;text-align:center}
+  .stat-val{font-family:'Playfair Display',serif;font-size:1.8rem;font-weight:400;color:var(--ink)}
+  .stat-lbl{font-size:.65rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+  .prophecy-preview{font-family:'Playfair Display',serif;font-style:italic;font-size:1rem;line-height:1.8;padding:1.25rem 1.5rem;border-left:3px solid var(--accent);background:var(--paper-dark);border-radius:0 6px 6px 0;margin-bottom:.5rem}
+  .prophecy-meta{font-size:.65rem;color:var(--muted);margin-bottom:1rem}
+  .table-scroll{max-height:400px;overflow-y:auto;border:1px solid var(--border);border-radius:6px}
+  input[type=file]{display:none}
+  .source-toggle{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem}
+  .tab-btn{padding:.45rem 1rem;font-family:'DM Mono',monospace;font-size:.72rem;letter-spacing:.05em;cursor:pointer;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--muted);transition:all .15s}
+  .tab-btn.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .hint{font-size:.68rem;color:var(--muted);margin-top:.4rem;line-height:1.6}
+  .progress-wrap{margin-top:.75rem;display:none}
+  .progress-wrap.show{display:block}
+  .progress-bar{height:3px;background:var(--paper-dark);border-radius:2px;overflow:hidden}
+  .progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .3s;width:0%}
+  .progress-label{font-size:.68rem;color:var(--muted);margin-top:.3rem}
+  .preview-line{padding:.5rem .75rem;border-bottom:.5px solid var(--border);font-size:.8rem;line-height:1.5}
+  .preview-line:last-child{border-bottom:none}
+  .preview-line .meta{font-size:.62rem;color:var(--muted);margin-right:.5rem}
+  .preview-line .text{font-family:'Playfair Display',serif;font-style:italic}
+  .source-box{background:var(--paper-dark);border-radius:4px;padding:.75rem 1rem;font-size:.75rem;line-height:1.9;margin-bottom:1rem;border-left:2px solid var(--border)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Book <em>Oracle</em></h1>
+  <span class="header-sub">генератор передбачень</span>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="nav-label">Кроки</div>
+    <div class="nav-item active" onclick="goTo('book')" id="nav-book"><div class="step-num">1</div>Книга</div>
+    <div class="nav-item" onclick="goTo('contacts')" id="nav-contacts"><div class="step-num">2</div>Контакти</div>
+    <div class="nav-item" onclick="goTo('generate')" id="nav-generate"><div class="step-num">3</div>Генерація</div>
+    <div class="nav-item" onclick="goTo('export')" id="nav-export"><div class="step-num">4</div>Експорт</div>
+    <hr class="sidebar-divider">
+    <div class="sidebar-stat">Книга: <strong id="sb-book">—</strong></div>
+    <div class="sidebar-stat">Сторінок: <strong id="sb-pages">—</strong></div>
+    <div class="sidebar-stat">Контактів: <strong id="sb-contacts">—</strong></div>
+    <div class="sidebar-stat">Готово: <strong id="sb-results">—</strong></div>
+  </aside>
+
+  <main class="main">
+
+    <!-- КРОК 1: КНИГА -->
+    <div class="panel active" id="panel-book">
+      <div class="panel-title">Завантажте книгу</div>
+      <div class="panel-desc">Завантажте PDF або вставте текст вручну. PDF парситься на сервері — сторінки і рядки збігатимуться з оригіналом.</div>
+
+      <div class="card">
+        <div class="card-title">Джерело тексту</div>
+        <div class="source-toggle">
+          <button class="tab-btn active" id="src-pdf-btn" onclick="setSrc('pdf')">PDF файл</button>
+          <button class="tab-btn" id="src-paste-btn" onclick="setSrc('paste')">Вставити текст</button>
+        </div>
+
+        <div id="src-pdf">
+          <div class="drop-zone" id="drop-pdf" onclick="document.getElementById('file-pdf').click()" ondrop="dropPdf(event)" ondragover="dov(event,'drop-pdf')" ondragleave="dol('drop-pdf')">
+            <span class="drop-icon">📄</span>
+            Натисніть або перетягніть PDF файл
+          </div>
+          <input type="file" id="file-pdf" accept=".pdf" onchange="loadPdf(event)">
+          <div class="progress-wrap" id="pdf-progress-wrap">
+            <div class="progress-bar"><div class="progress-fill" id="pdf-fill"></div></div>
+            <div class="progress-label" id="pdf-label">Завантаження...</div>
+          </div>
+        </div>
+
+        <div id="src-paste" style="display:none">
+          <div class="field">
+            <label>Текст книги (кожен рядок = один рядок книги)</label>
+            <textarea id="book-text" rows="12" placeholder="Вставте сюди текст книги...&#10;&#10;Кожен рядок тексту буде окремим рядком для передбачення."></textarea>
+          </div>
+        </div>
+
+        <div class="msg" id="msg-load"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Налаштування</div>
+        <div class="row3">
+          <div class="field">
+            <label>Рядків на сторінці (для ручного тексту)</label>
+            <input type="number" id="lines-per-page" value="42" min="10" max="100">
+            <div class="hint">Для PDF ігнорується — береться з файлу.</div>
+          </div>
+          <div class="field">
+            <label>Рядків у передбаченні</label>
+            <select id="lines-take">
+              <option value="1">1 рядок</option>
+              <option value="2" selected>2 рядки</option>
+              <option value="3">3 рядки</option>
+              <option value="4">4 рядки</option>
+              <option value="5">5 рядків</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Назва книги</label>
+            <input type="text" id="book-name" placeholder="Кайдашева сім'я">
+          </div>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" id="apply-btn" onclick="applyBook()" disabled>Застосувати книгу →</button>
+        </div>
+        <div class="msg" id="msg-book"></div>
+      </div>
+
+      <div class="card" id="book-preview-card" style="display:none">
+        <div class="card-title">Перевірка — кілька випадкових рядків</div>
+        <div id="book-preview-lines"></div>
+      </div>
+    </div>
+
+    <!-- КРОК 2: КОНТАКТИ -->
+    <div class="panel" id="panel-contacts">
+      <div class="panel-title">Завантажте контакти</div>
+      <div class="panel-desc">CSV з колонками: <code>email</code>, <code>first_name</code>, <code>page</code>, <code>line</code>.<br>Сторінка і рядок — координати які клієнт вказав в анкеті.</div>
+
+      <div class="card">
+        <div class="card-title">Формат CSV</div>
+        <div class="source-box">
+          email,first_name,page,line<br>
+          anna@gmail.com,Анна,12,5<br>
+          ivan@mail.ru,Іван,34,2<br>
+          kate@example.com,Катя,7,11
+        </div>
+        <div class="hint">Перший рядок — заголовки. Далі мінімум один рядок з даними.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Джерело контактів</div>
+        <div class="drop-zone" id="drop-csv" onclick="document.getElementById('file-csv').click()" ondrop="dropCSV(event)" ondragover="dov(event,'drop-csv')" ondragleave="dol('drop-csv')">
+          <span class="drop-icon">📋</span>Перетягніть CSV або натисніть для вибору
+        </div>
+        <input type="file" id="file-csv" accept=".csv,.txt" onchange="loadCSV(event)">
+        <div class="field">
+          <label>Або вставте CSV вручну</label>
+          <textarea id="csv-manual" rows="6" placeholder="email,first_name,page,line&#10;anna@gmail.com,Анна,12,5&#10;ivan@mail.ru,Іван,34,2"></textarea>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="parseContacts()">Завантажити контакти →</button>
+        </div>
+        <div class="msg" id="msg-contacts"></div>
+      </div>
+
+      <div class="card" id="preview-contacts" style="display:none">
+        <div class="card-title">Попередній перегляд <span id="contacts-badge" class="badge badge-ok"></span></div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th style="width:35%">email</th>
+              <th style="width:18%">ім'я</th>
+              <th style="width:10%">стор.</th>
+              <th style="width:10%">рядок</th>
+              <th style="width:27%">статус</th>
+            </tr></thead>
+            <tbody id="contacts-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- КРОК 3: ГЕНЕРАЦІЯ -->
+    <div class="panel" id="panel-generate">
+      <div class="panel-title">Генерація передбачень</div>
+      <div class="panel-desc">Для кожного контакту береться текст за координатами (сторінка + рядок).<br>Натисніть на рядок щоб побачити повний текст передбачення.</div>
+
+      <div class="stats-row">
+        <div class="stat-box"><div class="stat-val" id="st-pages">—</div><div class="stat-lbl">сторінок</div></div>
+        <div class="stat-box"><div class="stat-val" id="st-contacts">—</div><div class="stat-lbl">контактів</div></div>
+        <div class="stat-box"><div class="stat-val" id="st-done">—</div><div class="stat-lbl">готово</div></div>
+      </div>
+
+      <div class="card">
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="generateAll()">✦ Згенерувати всі</button>
+        </div>
+        <div class="msg" id="msg-gen"></div>
+      </div>
+
+      <div class="card" id="results-card" style="display:none">
+        <div class="card-title">Результати</div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th style="width:25%">email</th>
+              <th style="width:10%">ім'я</th>
+              <th style="width:7%">стор.</th>
+              <th style="width:7%">рядок</th>
+              <th style="width:51%">передбачення</th>
+            </tr></thead>
+            <tbody id="results-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" id="selected-card" style="display:none">
+        <div class="card-title">Вибраний запис</div>
+        <div class="prophecy-preview" id="selected-text">—</div>
+        <div class="prophecy-meta" id="selected-meta"></div>
+      </div>
+    </div>
+
+    <!-- КРОК 4: ЕКСПОРТ -->
+    <div class="panel" id="panel-export">
+      <div class="panel-title">Експорт для Klaviyo</div>
+      <div class="panel-desc">CSV з колонками: <code>email</code>, <code>first_name</code>, <code>prophecy_text</code>, <code>prophecy_page</code>, <code>prophecy_line</code>, <code>prophecy_source</code>.</div>
+
+      <div class="card" id="export-empty" style="display:none">
+        <div style="color:var(--muted);font-size:.8rem">Спочатку згенеруйте передбачення на кроці 3.</div>
+      </div>
+
+      <div id="export-ready" style="display:none">
+        <div class="stat-box" style="margin-bottom:1.25rem;text-align:left;padding:1.25rem 1.5rem">
+          <div style="font-size:.7rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.5rem">Готово до експорту</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.3rem" id="export-count">—</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Приклад</div>
+          <div class="prophecy-preview" id="export-sample">—</div>
+          <div class="prophecy-meta" id="export-sample-meta"></div>
+        </div>
+        <div class="card">
+          <div class="btn-group">
+            <button class="btn btn-gold" onclick="downloadCSV()">⬇ Завантажити CSV</button>
+            <button class="btn" onclick="copyCSV()">⧉ Скопіювати в буфер</button>
+          </div>
+          <div class="msg" id="msg-export"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Інструкція: Klaviyo</div>
+          <div style="font-size:.75rem;color:var(--muted);line-height:1.9">
+            1. <strong style="color:var(--ink)">Profiles → Import</strong> — завантажте CSV<br>
+            2. <code>{{ person.prophecy_text }}</code> — текст передбачення у шаблоні листа<br>
+            3. <code>{{ person.prophecy_page }}</code>, <code>{{ person.prophecy_line }}</code> — координати<br>
+            4. <code>{{ person.prophecy_source }}</code> — назва книги
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+let bookPages = {};   // { "1": ["рядок1","рядок2",...], ... }
+let totalPages = 0;
+let bookSource = 'pdf'; // 'pdf' or 'paste'
+let contacts = [];
+let results = [];
+
+// ── NAV ──────────────────────────────────────────────────────────────────────
+function goTo(name){
+  ['book','contacts','generate','export'].forEach(n=>{
+    document.getElementById('panel-'+n).classList.toggle('active',n===name);
+    document.getElementById('nav-'+n).classList.toggle('active',n===name);
+  });
+  if(name==='generate') refreshGenStats();
+  if(name==='export') refreshExport();
+}
+function markDone(n){document.getElementById('nav-'+n).classList.add('done');}
+
+// ── SOURCE ────────────────────────────────────────────────────────────────────
+function setSrc(m){
+  bookSource=m;
+  document.getElementById('src-pdf').style.display=m==='pdf'?'block':'none';
+  document.getElementById('src-paste').style.display=m==='paste'?'block':'none';
+  document.getElementById('src-pdf-btn').classList.toggle('active',m==='pdf');
+  document.getElementById('src-paste-btn').classList.toggle('active',m==='paste');
+  if(m==='paste') document.getElementById('apply-btn').disabled=false;
+}
+
+// ── DRAG ──────────────────────────────────────────────────────────────────────
+function dov(e,id){e.preventDefault();document.getElementById(id).classList.add('drag');}
+function dol(id){document.getElementById(id).classList.remove('drag');}
+
+// ── PDF UPLOAD ────────────────────────────────────────────────────────────────
+function dropPdf(e){e.preventDefault();dol('drop-pdf');uploadPdf(e.dataTransfer.files[0]);}
+function loadPdf(e){uploadPdf(e.target.files[0]);}
+
+async function uploadPdf(f){
+  if(!f) return;
+  const wrap=document.getElementById('pdf-progress-wrap');
+  const fill=document.getElementById('pdf-fill');
+  const label=document.getElementById('pdf-label');
+  wrap.classList.add('show');
+  fill.style.width='20%';
+  label.textContent='Завантаження PDF на сервер...';
+  showMsg('msg-load','⏳ Обробляємо PDF...','ok');
+
+  const fd=new FormData();
+  fd.append('pdf',f);
+
+  try{
+    fill.style.width='50%';
+    label.textContent='Парсимо сторінки...';
+    const res=await fetch('/parse-pdf',{method:'POST',body:fd});
+    const data=await res.json();
+
+    if(data.error){
+      wrap.classList.remove('show');
+      showMsg('msg-load','Помилка: '+data.error,'err');
+      return;
+    }
+
+    bookPages=data.pages;
+    totalPages=data.total_pages;
+    fill.style.width='100%';
+    label.textContent='Готово!';
+    setTimeout(()=>wrap.classList.remove('show'),1000);
+
+    // set book name from filename
+    const nameInput=document.getElementById('book-name');
+    if(!nameInput.value) nameInput.value=f.name.replace('.pdf','').replace(/_/g,' ');
+
+    document.getElementById('apply-btn').disabled=false;
+    showMsg('msg-load','✓ PDF завантажено: '+data.total_pages+' сторінок, '+data.total_lines.toLocaleString('uk')+' рядків','ok');
+    document.getElementById('drop-pdf').innerHTML='<span class="drop-icon">✓</span>'+f.name;
+
+  }catch(err){
+    wrap.classList.remove('show');
+    showMsg('msg-load','Помилка з\'єднання з сервером: '+err.message,'err');
+  }
+}
+
+// ── APPLY BOOK ────────────────────────────────────────────────────────────────
+function applyBook(){
+  if(bookSource==='paste'){
+    const raw=document.getElementById('book-text').value;
+    if(!raw.trim()){showMsg('msg-book','Вставте текст книги','err');return;}
+    const lpp=parseInt(document.getElementById('lines-per-page').value)||42;
+    const allLines=raw.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+    if(allLines.length<5){showMsg('msg-book','Замало рядків ('+allLines.length+')','err');return;}
+    bookPages={};
+    totalPages=Math.ceil(allLines.length/lpp);
+    for(let i=0;i<allLines.length;i++){
+      const pg=Math.floor(i/lpp)+1;
+      if(!bookPages[pg]) bookPages[pg]=[];
+      bookPages[pg].push(allLines[i]);
+    }
+  }
+
+  if(!Object.keys(bookPages).length){showMsg('msg-book','Спочатку завантажте PDF або вставте текст','err');return;}
+
+  showMsg('msg-book','✓ Книга готова: '+totalPages+' сторінок','ok');
+  updateSidebar();
+  markDone('book');
+  showBookPreview();
+  setTimeout(()=>goTo('contacts'),800);
+}
+
+function showBookPreview(){
+  const card=document.getElementById('book-preview-card');
+  const container=document.getElementById('book-preview-lines');
+  card.style.display='block';
+  container.innerHTML='';
+  const linesCount=parseInt(document.getElementById('lines-take').value)||2;
+  const pageNums=Object.keys(bookPages).map(Number);
+  for(let i=0;i<5;i++){
+    const pg=pageNums[Math.floor(Math.random()*pageNums.length)];
+    const lines=bookPages[pg];
+    const idx=Math.floor(Math.random()*Math.max(1,lines.length-linesCount));
+    const text=lines.slice(idx,idx+linesCount).join(' ');
+    const div=document.createElement('div');
+    div.className='preview-line';
+    div.innerHTML=`<span class="meta">стор.${pg} / рядок ${idx+1}</span><span class="text">${esc(text)}</span>`;
+    container.appendChild(div);
+  }
+}
+
+// ── CSV ───────────────────────────────────────────────────────────────────────
+function dropCSV(e){e.preventDefault();dol('drop-csv');readCSVFile(e.dataTransfer.files[0]);}
+function loadCSV(e){readCSVFile(e.target.files[0]);}
+function readCSVFile(f){
+  if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{document.getElementById('csv-manual').value=ev.target.result;parseContacts();};
+  r.readAsText(f,'UTF-8');
+}
+
+function parseCSVLine(line){
+  const res=[];let cur='';let inQ=false;
+  for(let i=0;i<line.length;i++){
+    if(line[i]==='"'){inQ=!inQ;}
+    else if(line[i]===','&&!inQ){res.push(cur.trim());cur='';}
+    else cur+=line[i];
+  }
+  res.push(cur.trim());return res;
+}
+
+function parseContacts(){
+  const raw=document.getElementById('csv-manual').value.trim();
+  if(!raw){showMsg('msg-contacts','Немає даних','err');return;}
+  const lines=raw.split('\n').filter(l=>l.trim());
+  if(lines.length<2){
+    showMsg('msg-contacts','Потрібен мінімум один рядок з даними після заголовка.\n\nПриклад:\nemail,first_name,page,line\nanna@gmail.com,Анна,12,5','err');
+    return;
+  }
+  const header=parseCSVLine(lines[0]).map(h=>h.toLowerCase().replace(/['"]/g,'').trim());
+  const eIdx=header.findIndex(h=>h.includes('email'));
+  const nIdx=header.findIndex(h=>h.includes('name')||h.includes('first')||h.includes('ім'));
+  const pIdx=header.findIndex(h=>h==='page'||h==='сторінка'||h==='стор'||h==='p');
+  const lIdx=header.findIndex(h=>h==='line'||h==='рядок'||h==='row'||h==='l');
+  if(eIdx===-1){showMsg('msg-contacts','Не знайдено колонку email','err');return;}
+  if(pIdx===-1||lIdx===-1){showMsg('msg-contacts','Не знайдено колонки page та/або line.\nПеревірте заголовки CSV.','err');return;}
+
+  contacts=lines.slice(1).map(l=>{
+    const c=parseCSVLine(l);
+    return{email:(c[eIdx]||'').replace(/"/g,'').trim(),name:nIdx>-1?(c[nIdx]||'').replace(/"/g,'').trim():'',page:parseInt(c[pIdx])||0,line:parseInt(c[lIdx])||0};
+  }).filter(c=>c.email.includes('@'));
+
+  if(!contacts.length){showMsg('msg-contacts','Не знайдено валідних email','err');return;}
+  showMsg('msg-contacts','✓ Завантажено: '+contacts.length+' контактів','ok');
+  document.getElementById('contacts-badge').textContent=contacts.length;
+  document.getElementById('preview-contacts').style.display='block';
+  const tb=document.getElementById('contacts-tbody');
+  tb.innerHTML=contacts.slice(0,20).map(c=>{
+    const ok=c.page>0&&c.line>0;
+    return`<tr class="${ok?'':'warn-row'}"><td title="${esc(c.email)}">${esc(c.email)}</td><td>${esc(c.name)||'—'}</td><td>${c.page||'?'}</td><td>${c.line||'?'}</td><td><span class="badge ${ok?'badge-ok':'badge-warn'}">${ok?'готово':'немає координат'}</span></td></tr>`;
+  }).join('');
+  if(contacts.length>20) tb.innerHTML+=`<tr><td colspan="5" style="color:var(--muted);font-size:.65rem">...ще ${contacts.length-20} рядків</td></tr>`;
+  updateSidebar();markDone('contacts');
+  setTimeout(()=>goTo('generate'),800);
+}
+
+// ── GENERATE ──────────────────────────────────────────────────────────────────
+function refreshGenStats(){
+  document.getElementById('st-pages').textContent=totalPages||'—';
+  document.getElementById('st-contacts').textContent=contacts.length||'—';
+  document.getElementById('st-done').textContent=results.length||'—';
+}
+
+async function generateAll(){
+  if(!Object.keys(bookPages).length){showMsg('msg-gen','Спочатку завантажте книгу (крок 1)','err');return;}
+  if(!contacts.length){showMsg('msg-gen','Спочатку завантажте контакти (крок 2)','err');return;}
+
+  showMsg('msg-gen','⏳ Генеруємо...','ok');
+  try{
+    const res=await fetch('/generate',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        pages:bookPages,
+        contacts:contacts,
+        lines_take:parseInt(document.getElementById('lines-take').value)||2,
+        book_name:document.getElementById('book-name').value||'Книга'
+      })
+    });
+    const data=await res.json();
+    results=data.results;
+    const errors=data.errors||[];
+
+    renderResults();
+    document.getElementById('results-card').style.display='block';
+    refreshGenStats();updateSidebar();markDone('generate');
+
+    const errCount=results.filter(r=>!r.found).length;
+    const msg=errCount>0
+      ?'✓ Готово: '+results.length+' передбачень\n⚠ '+errCount+' координат не знайдено — перевірте сторінки/рядки.'
+      :'✓ Готово: '+results.length+' передбачень';
+    showMsg('msg-gen',msg,errCount>0?'warn':'ok');
+  }catch(err){
+    showMsg('msg-gen','Помилка: '+err.message,'err');
+  }
+}
+
+function renderResults(){
+  const tb=document.getElementById('results-tbody');
+  tb.innerHTML=results.map((r,i)=>
+    `<tr onclick="selectRow(${i})" class="${r.found?'':'warn-row'}">
+      <td title="${esc(r.email)}">${esc(r.email)}</td>
+      <td>${esc(r.first_name)||'—'}</td>
+      <td>${r.prophecy_page}</td><td>${r.prophecy_line}</td>
+      <td title="${esc(r.prophecy_text)}">${esc(r.prophecy_text)}</td>
+    </tr>`
+  ).join('');
+}
+
+function selectRow(i){
+  const r=results[i];
+  document.getElementById('selected-card').style.display='block';
+  document.getElementById('selected-text').textContent=r.prophecy_text;
+  document.getElementById('selected-meta').textContent=
+    r.prophecy_source+' — стор. '+r.prophecy_page+', рядок '+r.prophecy_line+
+    (r.first_name?' | '+r.first_name:'')+' | '+r.email;
+  document.getElementById('selected-card').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────────
+function refreshExport(){
+  if(!results.length){
+    document.getElementById('export-empty').style.display='block';
+    document.getElementById('export-ready').style.display='none';return;
+  }
+  document.getElementById('export-empty').style.display='none';
+  document.getElementById('export-ready').style.display='block';
+  document.getElementById('export-count').textContent=results.length+' записів готово до експорту';
+  const s=results[Math.floor(Math.random()*results.length)];
+  document.getElementById('export-sample').textContent=s.prophecy_text;
+  document.getElementById('export-sample-meta').textContent=s.prophecy_source+' — стор. '+s.prophecy_page+', рядок '+s.prophecy_line;
+}
+
+function buildCSV(){
+  const header='email,first_name,prophecy_text,prophecy_page,prophecy_line,prophecy_source';
+  const rows=results.map(r=>[q(r.email),q(r.first_name||''),q(r.prophecy_text),r.prophecy_page,r.prophecy_line,q(r.prophecy_source)].join(','));
+  return[header,...rows].join('\r\n');
+}
+function downloadCSV(){
+  if(!results.length){showMsg('msg-export','Немає даних','err');return;}
+  const blob=new Blob(['\uFEFF'+buildCSV()],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='klaviyo_prophecies.csv';a.click();
+  URL.revokeObjectURL(url);
+  showMsg('msg-export','✓ Файл завантажено','ok');markDone('export');
+}
+function copyCSV(){
+  if(!results.length){showMsg('msg-export','Немає даних','err');return;}
+  navigator.clipboard.writeText(buildCSV()).then(()=>showMsg('msg-export','✓ Скопійовано в буфер','ok'));
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function q(s){return'"'+String(s).replace(/"/g,'""')+'"';}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function showMsg(id,txt,type){
+  const el=document.getElementById(id);
+  el.textContent=txt;el.className='msg show '+(type==='ok'?'ok':type==='warn'?'warn':'err');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.className='msg',7000);
+}
+function updateSidebar(){
+  document.getElementById('sb-book').textContent=document.getElementById('book-name').value||'—';
+  document.getElementById('sb-pages').textContent=totalPages||'—';
+  document.getElementById('sb-contacts').textContent=contacts.length||'—';
+  document.getElementById('sb-results').textContent=results.length||'—';
+}
+</script>
+</body>
+</html>
